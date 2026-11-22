@@ -699,7 +699,7 @@ document.addEventListener('visibilitychange',function(){if(document.hidden){clea
 var $app=document.getElementById('app');document.documentElement.setAttribute('dir','rtl');document.documentElement.setAttribute('lang','he');
 var V={name:'lobby',msg:'',pin:'',gift:null,bought:null,parent:false,resetArm:false},G=null,GAMES={};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function isNumTxt(s){return /^[\d\s+−×=<>.,:\-]+$/.test(s)}
+function isNumTxt(s){return /^[\d\s+−×÷◯=<>.,:_?\-]+$/.test(s)}
 function coinEl(sm){return '<span class="coin'+(sm?' sm':'')+'">★</span>'}
 function optHtml(o){return '<span'+(isNumTxt(o)?' class="num"':'')+'>'+esc(o)+'</span>'}
 function confetti(n){var c=document.createElement('div');c.className='confetti';var cols=['#ffd21e','#2ee66b','#3fd8ff','#ff3b4e','#9b4dff','#fff'];
@@ -725,7 +725,7 @@ function gameView(){var w=WORLDS[G.cfg.w];
 function hudUpd(){var h='';for(var i=0;i<G.max;i++)h+=i<G.hearts?HEART:HEART0;var e=$('hearts');if(e)e.innerHTML=h;e=$('gc');if(e)e.textContent=G.coins}
 function qBanner(q,prog){
   return '<div class="tag">'+(q.s==='m'?'חשבון':'עברית')+(prog?' · '+prog:'')+'</div>'+(q.p?'<div class="passage">'+esc(q.p)+'</div>':'')+(q.t?'<div class="qt">'+q.t+'</div>':'')+(q.x?'<div class="expr'+(/[\u0590-\u05ff]/.test(q.x)?' heb':'')+'">'+esc(q.x)+'</div>':'')}
-function fastMs(q){var b=q.p?26000:q.cells?22000:q.s==='h'?12000:10000;return perk('time')?b*1.5:b}
+function fastMs(q){var b=q.p?26000:q.long?20000:q.cells?22000:q.s==='h'?12000:10000;return perk('time')?b*1.5:b}
 function gTimer(ms){var it=$('intro');if(it&&!it.classList.contains('gone'))ms+=2000;var e=document.querySelector('#tb i');G.tEnd=Date.now()+ms;if(!e)return;e.style.transition='none';e.style.transform='scaleX(1)';void e.offsetWidth;e.style.transition='transform '+ms+'ms linear';e.style.transform='scaleX(0)'}
 function gCorrect(el,s){
   var fast=Date.now()<G.tEnd,c=4+(qLv(s)-1)+(fast?2:0)+(perk('coin')?1:0)+(perk('coin2')?2:0);
@@ -1067,10 +1067,12 @@ function finishDojo(win){
   sfx(win?'win':'lose');if(win){confetti(stars===3?100:50);[1,2,3].forEach(function(n){if(n<=stars)setTimeout(function(){sfx('star')},500+n*260)})}}
 function resButtons(r){
   var z=' style="z-index:1"';
+  if(r.exam)return '<button class="btn big wide"'+z+' data-a="exam">עוד אימון</button><button class="btn alt wide"'+z+' data-a="lobby">ללובי</button>';
   if(r.dojo){if(r.newBelt)return '<button class="btn grn big wide"'+z+' data-a="belt">קבל את החגורה!</button>';
     return (r.k<3?'<button class="btn big wide"'+z+' data-a="dstation" data-k="'+r.b+'-'+(r.k+1)+'">לתחנה הבאה</button>':'')+'<button class="btn alt wide"'+z+' data-a="dojo">לדוג׳ו</button>'}
   return (r.chest?'<button class="btn grn big wide"'+z+' data-a="chest">פתח את התיבה!</button>':'<button class="btn big wide"'+z+' data-a="play">לשלב הבא</button>')+'<button class="btn alt wide"'+z+' data-a="lobby">ללובי</button>'}
 function retryButtons(r){
+  if(r.exam)return '<button class="btn big wide" data-a="exam">נסה שוב</button><button class="btn alt wide" data-a="lobby">ללובי</button>';
   if(r.dojo)return '<button class="btn big wide" data-a="dstation" data-k="'+r.b+'-'+r.k+'">נסה שוב</button><button class="btn alt wide" data-a="dojo">לדוג׳ו</button>';
   return '<button class="btn big wide" data-a="stage" data-k="'+r.i+'">נסה שוב</button><button class="btn alt wide" data-a="lobby">ללובי</button>'}
 function beltView(){var B=BELTS[ST.belt-1];if(!B)return dojoView();
@@ -1081,6 +1083,73 @@ function factGrid(){
   var T=[2,3,4,5,10],h='<div class="fgrid num"><span></span>';for(var n=1;n<=10;n++)h+='<span class="hd">'+n+'</span>';
   T.forEach(function(t){h+='<span class="hd">×'+t+'</span>';for(var n=1;n<=10;n++){var f=(ST.facts||{})[factKey(n,t)]||[0,0],c=f[0]+f[1]===0?'':f[1]>f[0]?'weak':f[0]>=2&&f[0]>=f[1]*3?'good':'mid';h+='<span class="fc '+c+'" title="'+n+'×'+t+'">'+n*t+'</span>'}});
   return h+'</div><div class="row mute" style="gap:12px;font-size:.85rem"><span><i class="fc good lg"></i> שולט</span><span><i class="fc mid lg"></i> בלמידה</span><span><i class="fc weak lg"></i> צריך חיזוק</span><span><i class="fc lg"></i> עוד לא תורגל</span></div>'}
+/* ===== Stage A practice: original questions in the style of the screening test ===== */
+function three(c,cands,num){var out=[],seen={};seen[String(c)]=1;
+  cands.forEach(function(x){var k=String(x);if(out.length<3&&!seen[k]&&(!num||x>=0)){seen[k]=1;out.push(x)}});
+  if(num){var d=1;while(out.length<3){[c+d,c-d].forEach(function(v){if(out.length<3&&v>=0&&!seen[String(v)]){seen[String(v)]=1;out.push(v)}});d++}}
+  return out}
+function exprFor(v){
+  var forms=[];
+  if(v>2){var a=rnd(1,v-1);forms.push([a+' + '+(v-a),'add'])}
+  var b=rnd(2,15);forms.push([(v+b)+' − '+b,'sub']);
+  [2,3,4,5,10].forEach(function(f){if(v%f===0&&v/f>=2&&v/f<=10)forms.push([(v/f)+' × '+f,'mul'])});
+  var f=pick([2,3,4,5]),g=rnd(2,Math.max(2,Math.min(9,Math.floor((v-1)/f))));if(f*g<v)forms.push([g+' × '+f+' + '+(v-f*g),'mix']);
+  if(v+3<=60){var f2=pick([2,3,5]),g2=Math.ceil((v+1)/f2)+rnd(0,2);if(g2<=10&&f2*g2>v)forms.push([g2+' × '+f2+' − '+(f2*g2-v),'mix'])}
+  return pick(forms)[0]}
+var EX={
+ missAdd:function(){var T=pick([30,40,45,50,60]),a=rnd(11,T-9),b=T-a,first=Math.random()<.35;
+  return ch('m','איזה מספר חסר?',first?'___ + '+b+' = '+T:a+' + ___ = '+T,first?a:b,three(first?a:b,[(first?a:b)+10,(first?a:b)-10,(first?a:b)+1,(first?a:b)-1],1),T+' − '+(first?b:a)+' = '+(first?a:b)+'.')},
+ exprMatch:function(){var v=rnd(12,40),c=exprFor(v),w=[],seen={};seen[c]=1;
+  [1,-1,2,-2,3,10,-3].forEach(function(d){if(w.length<3&&v+d>2){var e=exprFor(v+d);if(!seen[e]){seen[e]=1;w.push(e)}}});
+  return ch('m','איזה תרגיל שווה ל-<span class="num">'+v+'</span>?','',c,w,'התרגיל '+c+' שווה ל-'+v+'.')},
+ compare:function(){var va=rnd(14,40),vb=Math.random()<.25?va:va+rnd(1,5)*(Math.random()<.5?1:-1),A=exprFor(va),B=exprFor(vb);
+  var c=va>vb?'תרגיל א':va<vb?'תרגיל ב':'שניהם שווים';
+  return ch('m','תרגיל א: <span class="num">'+A+'</span><br>תרגיל ב: <span class="num">'+B+'</span><br>איזה תרגיל גדול יותר?','',c,['תרגיל א','תרגיל ב','שניהם שווים','אי אפשר לדעת'].filter(function(x){return x!==c}),'תרגיל א שווה '+va+', ותרגיל ב שווה '+vb+'.')},
+ diffRes:function(){var a=rnd(21,45),b=rnd(11,40),va=a+b,c=rnd(40,80),d=rnd(5,va>c?20:Math.min(c-5,va-5)),vb=c-d;
+  if(vb>=va){vb=va-rnd(3,15);d=c-vb}var r=va-vb;
+  return ch('m','בכמה גדולה התוצאה של <span class="num">'+a+' + '+b+'</span> מהתוצאה של <span class="num">'+c+' − '+d+'</span>?','',r,three(r,[r+10,r-10,r+1,r-1,r+2],1),a+' + '+b+' = '+va+', '+c+' − '+d+' = '+vb+', ו-'+va+' − '+vb+' = '+r+'.')},
+ missOp:function(){
+  for(var t=0;t<20;t++){var op=pick(['+','−','×','÷']),a,b,r;
+   if(op==='+'){a=rnd(6,40);b=rnd(3,20);r=a+b}else if(op==='−'){a=rnd(15,50);b=rnd(3,a-4);r=a-b}
+   else if(op==='×'){b=pick([2,3,4,5,10]);a=rnd(3,10);r=a*b}else{b=pick([2,3,4,5,10]);r=rnd(2,10);a=r*b}
+   var ok=0;if(a+b===r)ok++;if(a-b===r)ok++;if(a*b===r)ok++;if(a%b===0&&a/b===r)ok++;
+   if(ok===1)return ch('m','איזה סימן חסר?',a+' ◯ '+b+' = '+r,op,['+','−','×','÷'].filter(function(x){return x!==op}),a+' '+op+' '+b+' = '+r+'.')}
+  return EX.missAdd()},
+ packs:function(){var S=rnd(20,32),k=pick([3,4,5,6,10]),p=Math.ceil(S/k),it=pick([['עפרונות','עיפרון','נמכרים'],['מחקים','מחק','נמכרים'],['מחברות','מחברת','נמכרות'],['מדבקות','מדבקה','נמכרות']]);
+  return ch('m','בכיתה '+S+' ילדים. '+it[0]+' '+it[2]+' בחבילות של '+k+'. כמה חבילות צריך לקנות כדי שכל ילד יקבל '+it[1]+'?','',p,three(p,[Math.floor(S/k),p+1,p-1,p+2],1),
+   p+' חבילות הן '+p*k+' '+it[0]+', וזה מספיק ל-'+S+' ילדים'+(p>1?'. '+(p-1)+' חבילות הן רק '+(p-1)*k+'.':'.'))},
+ clock:function(){var h=rnd(7,15),m=pick([0,30]),D=pick([[30,'חצי שעה'],[60,'שעה'],[90,'שעה וחצי'],[120,'שעתיים'],[150,'שעתיים וחצי']]);
+  function f(t){var hh=Math.floor(t/60)%24,mm=t%60;return hh+':'+(mm<10?'0':'')+mm}var st=h*60+m,c=f(st+D[0]);
+  return ch('m','בשעה <span class="num">'+f(st)+'</span> יצאה רכבת לנסיעה של '+D[1]+'. באיזו שעה היא הגיעה?','',c,[f(st+D[0]+30),f(st+D[0]-30),f(st+D[0]+60),f(st+D[0]-60)].filter(function(x){return x!==c&&x!==f(st)}).slice(0,3),f(st)+' ועוד '+D[1]+' זה '+c+'.')},
+ symbol:function(){var S=pick(['⭐','🍎','💎','⚽']),v=rnd(2,9);
+  if(Math.random()<.5){var k=rnd(1,9),n=2*v+k;return ch('m','מה המספר שמסתתר מאחורי '+S+'?',S+' + '+S+' + '+k+' = '+n,v,three(v,[v+1,v-1,n-k,v+2],1),n+' − '+k+' = '+(2*v)+', ו-'+(2*v)+' זה '+v+' + '+v+'. לכן '+S+' = '+v+'.')}
+  var T=pick(['🍌','🔑','🎈']),u=rnd(2,9);
+  return ch('m',S+' + '+S+' = <span class="num">'+2*v+'</span><br>'+S+' + '+T+' = <span class="num">'+(v+u)+'</span><br>מה המספר שמסתתר מאחורי '+T+'?','',u,three(u,[v,u+1,u-1,v+u],1),S+' = '+v+', ולכן '+T+' = '+(v+u)+' − '+v+' = '+u+'.')},
+ ineqLess:function(){var a=rnd(20,60),gap=rnd(6,12),lim=a+gap,ok=rnd(1,gap-1),w=three(-1,[gap,gap+1,gap+3,gap+5,gap+10],0);
+  return ch('m','איזה מספר אפשר לכתוב במקום הקו?',a+' + ___ < '+lim,ok,w,'כל מספר קטן מ-'+gap+' מתאים, כי '+a+' + '+gap+' = '+lim+'.')},
+ ineqMore:function(){var N=rnd(30,70),gap=rnd(5,12),M=N-gap,ok=gap+rnd(1,5),w=three(-1,[gap,gap-1,gap-3,Math.max(0,gap-5),1],0);
+  return ch('m','איזה מספר אפשר לכתוב במקום הקו?',N+' − ___ < '+M,ok,w,'צריך להוריד יותר מ-'+gap+', כי '+N+' − '+gap+' = '+M+'.')}
+};
+/* the weekly story names mix boys and girls; fix the pronoun for boys */
+function fixG(q,name){if(/^(איתי|עומר)/.test(name))q.t=q.t.replace('בשבת היא','בשבת הוא');return q}
+EX.weekly=function(){var X=rnd(2,5),Y=rnd(1,9);if(Y===X)Y++;var st=pick([['נועה קוראת','דפים','קוראת'],['איתי אוכל','תותים','אוכל'],['שירה שותה','כוסות מים','שותה'],['עומר עושה','קפיצות בחבל','עושה']]);
+  var c='6 × '+X+' + '+Y,q=ch('m',st[0]+' '+X+' '+st[1]+' בכל יום, חוץ משבת. בשבת היא '+st[2]+' '+Y+'. איזה תרגיל מראה כמה '+st[1]+' בשבוע שלם?','',c,['7 × '+X+' + '+Y,'6 × '+Y+' + '+X,'6 + '+X+' + '+Y],'בשבוע יש 6 ימים רגילים ושבת אחת: 6 × '+X+' ועוד '+Y+'.');return fixG(q,st[0])};
+var EXTYPES=Object.keys(EX);
+function examQ(){if(!G.exOrder||!G.exOrder.length)G.exOrder=shuffle(EXTYPES);for(var t=0;t<8;t++){var q=EX[G.exOrder.pop()]();var sig=q.t+q.x;if(G.seen[sig])continue;G.seen[sig]=1;q.lv=2;q.long=1;if(!G.exOrder.length)G.exOrder=shuffle(EXTYPES);return q}return EX.missAdd()}
+/* a few of these types also show up in the regular worlds from level 2 */
+MATH.exprMatch=function(){return EX.exprMatch()};MATH.missOp=function(){return EX.missOp()};MATH.symbol=function(){return EX.symbol()};MATH.clock=function(){return EX.clock()};
+var _mathPool=mathPool;mathPool=function(lv){var p=_mathPool(lv);if(lv>=2)p.push('exprMatch','missOp','symbol','clock');return p};
+ICON.exam='<svg viewBox="0 0 40 40"><rect x="7" y="6" width="26" height="31" rx="4" fill="#fff" stroke="#140a2e" stroke-width="3"/><rect x="14" y="3" width="12" height="7" rx="2.5" fill="#ffd21e" stroke="#140a2e" stroke-width="2.5"/><path d="M12 18l3 3 5-6M12 29l3 3 5-6" fill="none" stroke="#2ee66b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 19h6M23 30h6" stroke="#140a2e" stroke-width="2.5" stroke-linecap="round"/></svg>';
+function startExam(){
+  var cfg={exam:true,w:2,type:'battle',sub:'m',boss:true,i:-1,s:0,title:'אימון שלב א׳'};
+  G={cfg:cfg,hearts:5,max:5,coins:0,correct:0,fast:0,lost:0,seen:{},guard:perk('guard'),live:true,timers:[],tEnd:0,lock:false,done:0,n:12,
+     qsrc:examQ,foeArt:function(m){return monsterSvg(2,true,m)},foeName:'שומר המבחן'};
+  V.name='game';render()}
+function finishExam(win){
+  var stars=win?(G.lost===0?3:G.lost<=2?2:1):0,bonus=win?20:0,tr=win?4:0;addCoins(bonus);ST.trophies+=tr;ST.rounds++;ST.exams=(ST.exams||0)+1;
+  if(win){ST.wins++;if(G.lost===0)ST.perfect++}
+  persist();V.res={win:win,stars:stars,coins:G.coins,bonus:bonus,tr:tr,chest:'',exam:true,fast:G.fast};V.name='result';render();
+  sfx(win?'win':'lose');if(win){confetti(stars===3?100:50);[1,2,3].forEach(function(n){if(n<=stars)setTimeout(function(){sfx('star')},500+n*260)})}}
 /* ===== lobby ===== */
 function topbar(back){
   return '<div class="bar">'+(back?'<button class="chip" data-a="lobby">→ חזרה</button>':'<button class="chip" data-a="snd" aria-label="צליל">'+(ST.snd?'🔊':'🔇')+'</button>')+
@@ -1091,7 +1160,7 @@ function lobbyView(){
   function ib(a,ic,tx,bd){return '<button class="ibtn" data-a="'+a+'">'+(bd?'<span class="badge">'+bd+'</span>':'')+ICON[ic]+'<span>'+tx+'</span></button>'}
   return topbar(false)+'<div class="lobby">'+
   '<div class="stageHero"><div class="heroName"><h2 class="ol">'+h.name+'</h2><span class="rar" style="background:'+RARC[h.rar]+'">'+RAR[h.rar]+'</span></div>'+
-   '<div class="side r">'+ib('map','map','מפה')+ib('heroes','heroes','דמויות')+ib('dojo','belt','כפל',ST.belt<6&&!dojoState(ST.belt)[0]?'!':'')+'</div><div class="side l">'+ib('road','road','גביעים',rr)+ib('shop','shop','מתנות',afford)+'</div>'+
+   '<div class="side r">'+ib('map','map','מפה')+ib('heroes','heroes','דמויות')+ib('dojo','belt','כפל',ST.belt<6&&!dojoState(ST.belt)[0]?'!':'')+'</div><div class="side l">'+ib('exam','exam','שלב א׳')+ib('road','road','גביעים',rr)+ib('shop','shop','מתנות',afford)+'</div>'+
    '<div class="beams"></div><div class="heroStand"><div class="bob">'+heroSvg(h,'happy')+'</div>'+pedestal(RARC[h.rar])+'</div></div>'+
   (V.msg?'<div class="bubble pop">'+V.msg+'</div>':'')+
   (nc?'<button class="btn grn wide" data-a="chest">יש לך '+(nc>1?nc+' תיבות':'תיבה')+' לפתוח!</button>':'')+
@@ -1145,7 +1214,7 @@ function unlockView(){var h=heroBy(V.unlock);
 
 /* ===== stage result ===== */
 function finishStage(win){
-  if(G.dragOff)G.dragOff();if(G.cfg.dojo)return finishDojo(win);
+  if(G.dragOff)G.dragOff();if(G.cfg.dojo)return finishDojo(win);if(G.cfg.exam)return finishExam(win);
   var cfg=G.cfg,first=cfg.i===ST.prog,stars=win?(G.lost===0?3:G.lost===1?2:1):0,bonus=win?(cfg.boss?30:10):0,tr=win?(first?(cfg.boss?15:8):3):0,chest='';
   addCoins(bonus);ST.trophies+=tr;ST.rounds++;
   if(win){ST.wins++;ST.stars[cfg.i]=Math.max(ST.stars[cfg.i]||0,stars);if(G.lost===0)ST.perfect++;
@@ -1155,7 +1224,7 @@ function finishStage(win){
 function resultView(){
   var r=V.res,st='';for(var i=1;i<=3;i++)st+='<span class="pop" style="animation-delay:'+(.4+i*.26)+'s;display:inline-block">'+star(i<=r.stars)+'</span>';
   if(!r.win)return topbar(true)+'<div class="center" style="flex:1;align-content:center"><h1 class="ol defeat pop">כמעט!</h1><div style="width:46%;max-width:180px">'+heroSvg(ST.hero,'hurt')+'</div><div class="bubble">אספת '+r.coins+' מטבעות בדרך. גיבורים אמיתיים מנסים שוב!</div>'+retryButtons(r)+'</div>';
-  return topbar(true)+'<div class="center" style="flex:1;align-content:center"><div class="rays"></div><h1 class="ol pop victory" style="z-index:1">'+(r.dojo&&r.k===3?'עברת את המבחן!':r.boss?'ניצחת את הבוס!':'ניצחון!')+'</h1><div class="stars3" style="z-index:1">'+st+'</div><div class="bob" style="width:42%;max-width:170px;z-index:1">'+heroSvg(ST.hero,'happy')+'</div>'+
+  return topbar(true)+'<div class="center" style="flex:1;align-content:center"><div class="rays"></div><h1 class="ol pop victory" style="z-index:1">'+(r.exam?'סיימת את האימון!':r.dojo&&r.k===3?'עברת את המבחן!':r.boss?'ניצחת את הבוס!':'ניצחון!')+'</h1><div class="stars3" style="z-index:1">'+st+'</div><div class="bob" style="width:42%;max-width:170px;z-index:1">'+heroSvg(ST.hero,'happy')+'</div>'+
   '<div class="list" style="z-index:1;width:100%"><div class="li"><span>מטבעות מהתשובות'+(r.fast?' (כולל '+r.fast+' בונוסי מהירות)':'')+'</span><b class="plus"><span data-count="'+r.coins+'">+0</span> '+coinEl(true)+'</b></div><div class="li"><span>בונוס ניצחון</span><b class="plus"><span data-count="'+r.bonus+'">+0</span> '+coinEl(true)+'</b></div><div class="li"><span>גביעים</span><b class="plus"><span data-count="'+r.tr+'">+0</span> '+TROPH+'</b></div></div>'+
   resButtons(r)+'</div>'}
 
@@ -1189,7 +1258,7 @@ function parentView(){
   return topbar(true)+'<h2 class="ol">אזור הורים</h2>'+
   '<div class="card list"><h3>התקדמות</h3>'+
    '<div class="li"><span>מטבעות בארנק</span><b>'+fmt(ST.coins)+'</b></div><div class="li"><span>סך הכול נאספו</span><b>'+fmt(ST.earned)+'</b></div>'+
-   '<div class="li"><span>שלבים שהושלמו במפה</span><b>'+ST.prog+' מתוך '+NSTAGE+'</b></div><div class="li"><span>משחקים ששוחקו / ללא טעות</span><b>'+ST.rounds+' / '+ST.perfect+'</b></div><div class="li"><span>גביעים</span><b>'+ST.trophies+'</b></div><div class="li"><span>דמויות שנאספו</span><b>'+ST.heroes.length+' מתוך '+HEROES.length+'</b></div>'+
+   '<div class="li"><span>שלבים שהושלמו במפה</span><b>'+ST.prog+' מתוך '+NSTAGE+'</b></div><div class="li"><span>משחקים ששוחקו / ללא טעות</span><b>'+ST.rounds+' / '+ST.perfect+'</b></div><div class="li"><span>אימוני שלב א׳</span><b>'+(ST.exams||0)+'</b></div><div class="li"><span>גביעים</span><b>'+ST.trophies+'</b></div><div class="li"><span>דמויות שנאספו</span><b>'+ST.heroes.length+' מתוך '+HEROES.length+'</b></div>'+
    '<div class="li"><span>שלב חשבון / עברית</span><b>'+ST.lvM+' / '+ST.lvH+'</b></div><div class="li"><span>רצף ימים</span><b>'+ST.streakDays+'</b></div></div>'+
   '<div class="card list"><h3>לוח הכפל</h3><p class="mute">חגורה: '+(ST.belt?BELTS[ST.belt-1].name:'לבנה')+'. כל משבצת היא תרגיל, והצבע מראה כמה הוא שולט בו.</p>'+factGrid()+'</div>'+
   '<div class="card list"><h3>התאמת מטבעות</h3><p class="mute">להוספה או הורדה ידנית, למשל על מטלה בבית.</p><div class="row"><button class="chip grow" data-a="adj" data-k="-50">−50</button><button class="chip grow" data-a="adj" data-k="50">+50</button><button class="chip grow" data-a="adj" data-k="100">+100</button><button class="chip grow" data-a="adj" data-k="250">+250</button></div></div>'+
@@ -1234,6 +1303,7 @@ $app.addEventListener('click',function(e){
   if(a==='map'||a==='heroes'||a==='road'||a==='shop'||a==='dojo')return go(a);
   if(a==='dstation'){var bk=k.split('-');return startDojo(+bk[0],+bk[1])}
   if(a==='belt'){V.name='belt';return render()}
+  if(a==='exam')return startExam();
   if(a==='chest'||a==='chestdone')return openNextChest();
   if(a==='chesttap')return chestTap();
   if(a==='claim')return claimRoad();
